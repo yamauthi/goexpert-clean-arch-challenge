@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -23,8 +24,12 @@ func (suite *OrderRepositoryTestSuite) SetupSuite() {
 	suite.Db = db
 }
 
-func (suite *OrderRepositoryTestSuite) TearDownTest() {
+func (suite *OrderRepositoryTestSuite) TearDownSuite() {
 	suite.Db.Close()
+}
+
+func (suite *OrderRepositoryTestSuite) TearDownTest() {
+	suite.Db.Exec("DELETE FROM orders")
 }
 
 func TestSuite(t *testing.T) {
@@ -48,4 +53,30 @@ func (suite *OrderRepositoryTestSuite) TestGivenAnOrder_WhenSave_ThenShouldSaveO
 	suite.Equal(order.Price, orderResult.Price)
 	suite.Equal(order.Tax, orderResult.Tax)
 	suite.Equal(order.FinalPrice, orderResult.FinalPrice)
+}
+
+func (suite *OrderRepositoryTestSuite) TestListOrders_WhenList_ThenShouldListAllOrders() {
+	repo := NewOrderRepository(suite.Db)
+
+	for i := 1; i <= 8; i++ {
+		//Generate orders to insert
+		order, err := entity.NewOrder("ORDER_ID-"+strconv.Itoa(i), 80.0, 20.0)
+		suite.NoError(err)
+		suite.NoError(order.CalculateFinalPrice())
+		err = repo.Save(order)
+		suite.NoError(err)
+	}
+
+	resultList, err := repo.List()
+	suite.NoError(err)
+
+	i := 1
+	for _, order := range resultList {
+		suite.Equal(order.ID, "ORDER_ID-"+strconv.Itoa(i))
+		suite.Equal(order.Price, 80.0)
+		suite.Equal(order.Tax, 20.0)
+		suite.Equal(order.FinalPrice, 100.0)
+		i++
+	}
+
 }

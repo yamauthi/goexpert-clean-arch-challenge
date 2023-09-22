@@ -6,7 +6,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/yamauthi/goexpert-clean-arch-challenge/internal/infra/graph/model"
 	"github.com/yamauthi/goexpert-clean-arch-challenge/internal/usecase"
@@ -33,7 +32,25 @@ func (r *mutationResolver) CreateOrder(ctx context.Context, input *model.OrderIn
 
 // Orders is the resolver for the orders field.
 func (r *queryResolver) Orders(ctx context.Context) ([]*model.Order, error) {
-	panic(fmt.Errorf("not implemented: Orders - orders"))
+	list, err := r.ListOrdersUseCase.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var resultList []*model.Order
+
+	for _, o := range list.Orders {
+		order := &model.Order{
+			ID:         o.ID,
+			Price:      float64(o.Price),
+			Tax:        float64(o.Tax),
+			FinalPrice: float64(o.FinalPrice),
+		}
+
+		resultList = append(resultList, order)
+	}
+
+	return resultList, nil
 }
 
 // Mutation returns MutationResolver implementation.
